@@ -23,7 +23,7 @@ router.get('/:id',(req,res) => {
 
 });
 
-router.post('/',(req, res) =>{
+router.post('/',(req, res) => {
     var emp = new empleados({
         Cedula: req.body.Cedula,
         Nombre: req.body.Nombre,
@@ -31,15 +31,24 @@ router.post('/',(req, res) =>{
         Nacionalidad: req.body.Nacionalidad,
         FechaNacimiento: req.body.FechaNacimiento,
     });
-    emp.save((err, doc) => {
-        if(!err) {res.send(doc); }
-        else{ console.log('Error en guardar empleados:' +JSON.stringify(err, undefined,2));}
+
+    // Verificar si la cédula ya existe
+    empleados.findOne({ Cedula: req.body.Cedula }, (err, empleadoExistente) => {
+        if (empleadoExistente) {
+            return res.status(400).send('Ya existe un empleado con esta cédula');
+        } else {
+            emp.save((err, doc) => {
+                if(!err) {res.send(doc); }
+                else { console.log('Error en guardar empleados:' + JSON.stringify(err, undefined, 2)); }
+            });
+        }
     });
 });
 
 router.put('/:id',(req,res)=>{
-    if (!ObjectId.isValid(req.params.id))
+    if (!ObjectId.isValid(req.params.id)) {
         return res.status(400).send(`No hay registro con ese id: ${req.params.id}`);
+    }
 
     var emp = {
         Cedula: req.body.Cedula,
@@ -48,11 +57,20 @@ router.put('/:id',(req,res)=>{
         Nacionalidad: req.body.Nacionalidad,
         FechaNacimiento: req.body.FechaNacimiento,
     };
-    empleados.findByIdAndUpdate(req.params.id, {$set: emp}, {new: true}, (err,doc) =>{
-        if(!err) {res.send(doc)}
-        else{console.log('Error en actualizar el empleado:' + JSON.stringify(err.undefined,2));}
+
+    // Verificar si la cédula ya existe
+    empleados.findOne({ Cedula: req.body.Cedula, _id: { $ne: req.params.id } }, (err, empleadoExistente) => {
+        if (empleadoExistente) {
+            return res.status(400).send('Ya existe un empleado con esta cédula');
+        } else {
+            empleados.findByIdAndUpdate(req.params.id, {$set: emp}, {new: true}, (err,doc) =>{
+                if(!err) {res.send(doc)}
+                else{console.log('Error en actualizar el empleado:' + JSON.stringify(err, undefined, 2));}
+            });
+        }
     });
 });
+
 
 router.delete('/:id',(req,res) =>{
     if(!ObjectId.isValid(req.params.id))
